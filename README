@@ -1,0 +1,13 @@
+This archive contains the files you'll need to complete
+the project.
+
+- iplookup.skel.sh: This will ultimately be your script file.
+  You'll rename it 'iplookup.sh'
+- resetufw.sh: This script will reset the UFW firewall. It'll
+  be useful for testing your script. (you might even find some
+  hints within that'll help you with iplookup.sh)
+- 1210log.txt: This is a small clip from an actual log file
+  that you can use for testing
+- sample_authlog.txt: This is a larger clip from the same log
+  file that will be used for grading your work
+- README: This file
