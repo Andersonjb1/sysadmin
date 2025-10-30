@@ -1,13 +1,22 @@
 #!/bin/bash
 ########################################################################
-#	iplookup.sh
-#	  Author:	      Blaine Anderson
-#	  Date:		      2025-10-06
-# 	Last revised:	2025-10-18
+# iplookup.sh
+#	Author:	      	Blaine Anderson
+#	Date:		    2025-10-06
+# 	Last revised:	2025-10-22
 #	  Description:	
-#       - Updated to meet the requirements for MS1
+#       - Updated to meet the requirements for MS1 (2025-10-18)
 #         - Error Checking
 #         - Initial Processing
+#       - Added updates to meet the requirements for MS2 (2025-10-22)
+#         - show_menu()
+#         - pause()
+#         - main loop with case statements
+#
+#
+#
+#
+#
 ########################################################################
 
 #colors
@@ -50,6 +59,7 @@ fi
 QUAD="(25[0-5])|(2[0-4][0-9])|(1[0-9]{2})|([1-9]?[0-9])"
 IP="\b($QUAD)\.($QUAD)\.($QUAD)\.($QUAD)\b"
 
+clear
 printf "Working... "
 
 #scrape IPs from input file, sort, get unique
@@ -64,22 +74,37 @@ regs=$(grep -oP "rhost=\K$IP" "$INPUT_FILE" | sort -g | uniq -c | awk '$1 >= 100
 i=$(echo "$regs" | awk '{sum += $1} END {print sum+0}')   #counter for attempts
 uniqIps=$(echo "$regs" | sort -u | wc -l) #counter for unique IP addresses
 
-echo -e $LTPURP"\n\nThere were "$i" attempts\nFrom "$uniqIps" unique IP addresses\n"$RESET
+echo -e $LTPURP"\n\nThere were "$i" attempts\nFrom "$uniqIps" unique IP addresses"$RESET
 
-echo "Done!"
 sleep 1s
 echo
 
 ############  FUNCTIONS  ############
 #display menu
 function show_menu () {
-  # Show Menu function
+  echo -e $CYAN"============================================"
+  echo -e "=================== Menu ==================="
+  echo -e "============================================"
+  echo -e $RESET" ┌────────────────────────────────────────┐"
+  echo -e " │${YELLOW}  1.${RESET} Get unique IP addresses            │"
+  echo -e " │${YELLOW}  2.${RESET} Show detailed information          │"
+  echo -e " │${YELLOW}  3.${RESET} Add new offenders to UFW           │"
+  echo -e " │${YELLOW}  4.${RESET} Bracket IP subnet/add to UFW       │"
+  echo -e " │${YELLOW}  5.${RESET} Show firewall rules ('q' to quit)  │"
+  echo -e " │${YELLOW}  6.${RESET} Reset the firewall                 │"
+  echo -e " │${YELLOW}  7.${RESET} Quit                               │"
+  echo -e " └────────────────────────────────────────┘"
+  echo -e $CYAN"============================================"
+  echo -e $RESET
   return 0
 }
 
 #pause output
 function pause () {
-  # Pause function
+  echo -e $RED"\n...Press Enter to continue..."
+  read -n1 
+  echo -e $RESET
+  clear
   return 0
 }
 
@@ -88,6 +113,7 @@ function pause () {
 #that block isn't already in UFW and 
 #delete it, if so
 function delete_ip () {
+  clear
   echo "Delete singleton IP from UFW"
 
   #find the UFW rule # associated with the IP
@@ -107,6 +133,7 @@ function delete_ip () {
 
 #display the unique IP addresses on demand
 function display_unique_ips () {
+  clear
   echo "Display IPs and counts"
   
   return 0
@@ -114,6 +141,7 @@ function display_unique_ips () {
 
 #print detailed info on the offenders
 function print_info () {
+  clear
   echo "Print detailed information about IP address"
 
   return 0
@@ -122,10 +150,10 @@ function print_info () {
 #add the IPs to the firewall. if 'y', have to check
 #and make sure that the IP isn't already in the firewall
 function add_ips_to_ufw () {
+  clear
   echo "Add singleton IP addresses to UFW"
   
   return 0
-  pause
 }
 
 #modify the offenders to the CIDR notation for each
@@ -135,16 +163,17 @@ function add_ips_to_ufw () {
 #(often attacks come in from multiple hosts
 #within a given range)
 function bracket_ips () {
+  clear
   echo "Modify IPs to CIDR (x.x.x.0/24)"
   echo "Delete IP from UFW"
   echo "Insert CIDR to UFW"
 
-  pause
   return 0
 }
 
 #show all firewall rules (run thru less)
 function show_firewall () {
+  clear
   echo "List UFW rules"
 }
 
@@ -152,9 +181,9 @@ function show_firewall () {
 #reset it to allow only ssh, http, and 
 #https. Then, current offenders can be added
 function reset_firewall () {
+  clear
   echo "Reset firewall"  
 
-  pause
   return 0
 }
 
@@ -179,12 +208,48 @@ done <<< $regs
 pause 
 
 # main loop
-# while true; do
-#  
-# done
+while [[ $finished -eq 0 ]]; do
+  show_menu
+  echo -e $CYAN"Choose an option [1-7]: "
+  read -n1 choice
+  echo -e $RESET
+  case "$choice" in
+    1)
+      display_unique_ips
+      pause
+      ;;
+    2)
+      print_info
+      pause
+      ;;
+    3)
+      add_ips_to_ufw
+      pause
+      ;;
+    4)
+      bracket_ips
+      pause
+      ;;
+    5)
+      show_firewall
+      pause
+      ;;
+    6)
+      reset_firewall
+      pause
+      ;;
+    7)
+      clear
+      echo -e $GREEN"Exiting..."$RESET
+      finished=1
+      ;;
+    *)
+      clear
+      echo -e $RED"Invalid selection. Please choose 1-7."$RESET
+      ;;
+  esac
+done
 
-echo
-echo "Done! Bye now"
-echo
+echo -e "\nDone! Bye now\n"
 
 exit 0
