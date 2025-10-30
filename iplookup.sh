@@ -1,9 +1,9 @@
 #!/bin/bash
 ########################################################################
-# iplookup.sh
-#	Author:	      	Blaine Anderson
-#	Date:		    2025-10-06
-# 	Last revised:	2025-10-22
+#	iplookup.sh
+#	  Author:	      Blaine Anderson
+#	  Date:		      2025-10-06
+# 	Last revised:	2025-10-29
 #	  Description:	
 #       - Updated to meet the requirements for MS1 (2025-10-18)
 #         - Error Checking
@@ -12,24 +12,27 @@
 #         - show_menu()
 #         - pause()
 #         - main loop with case statements
-#
-#
-#
+#	      - Implemented requirements for MS3 (2025-10-29)
+#	        - display_unique_ips()
+#           - to get the colors to work in awk I had to use \033 instead of \e
+#         - print_info()
+#           - Displays heading, IP address, detailed info, # of attempts,
+#               and allows the user to quit
 #
 #
 ########################################################################
 
 #colors
-RESET="\e[0m"
-CYAN="\e[36m"
-MAGENTA="\e[31m"
-YELLOW="\e[38;5;228m"
-PURPLE="\e[38;5;141m"
-RED="\e[38;5;196m"
-GREEN="\e[38;5;43m"
-BLUE="\e[38;5;26m"
-LTPURP="\e[38;5;219m"
-ORANGE="\e[38;5;216m"
+RESET="\033[0m"
+CYAN="\033[36m"
+MAGENTA="\033[31m"
+YELLOW="\033[38;5;228m"
+PURPLE="\033[38;5;141m"
+RED="\033[38;5;196m"
+GREEN="\033[38;5;43m"
+BLUE="\033[38;5;26m"
+LTPURP="\033[38;5;219m"
+ORANGE="\033[38;5;216m"
 
 ############### ERROR CHECKING ######################
 #have to sudo to access log files
@@ -102,7 +105,7 @@ function show_menu () {
 #pause output
 function pause () {
   echo -e $RED"\n...Press Enter to continue..."
-  read -n1 
+  read -r -n1 < /dev/tty 
   echo -e $RESET
   clear
   return 0
@@ -133,8 +136,22 @@ function delete_ip () {
 
 #display the unique IP addresses on demand
 function display_unique_ips () {
+    
   clear
-  echo "Display IPs and counts"
+
+  # awk is saying if the line number is even use GREEN otherwise use LTPURP
+  #   and reset at the end. 
+  # $2 - the ips from regs
+  # $1 - the number of attemps from regs
+  uniq_ips=$(echo "$regs" | awk -v c1="$GREEN" -v c2="$LTPURP" -v reset="$RESET" '
+        NR % 2 {color=c1}
+        !(NR % 2) {color=c2}
+        {printf "%s%s%s\n", color,"> " $2 " (" $1 " attempts)", reset}')
+ 
+  echo -e $RED"Naughty IP addresses:"
+  echo -e "====================================="$RESET
+  echo -e "$uniq_ips" 
+  echo -e $RED"====================================="$RESET
   
   return 0
 }
@@ -142,7 +159,50 @@ function display_unique_ips () {
 #print detailed info on the offenders
 function print_info () {
   clear
-  echo "Print detailed information about IP address"
+
+  TOKEN="ed89a5347cc7cc"
+
+  # Added this counter for fun
+  # Thought it might be good to see where you are in the list of IPs
+  TOTAL_IPS=$(echo "$regs" | wc -l)
+  CURRENT_IP=1
+
+  # Loops through all ips using regs, fetches ip info data,
+  #   then prints everything out to the terminal one ip at a time
+  while read -r ip attempts; do
+
+    # Display counter
+    echo -e $PURPLE"[$CURRENT_IP | $TOTAL_IPS]"$RESET
+
+
+    echo -e "${RED}IP Information for $ip${RESET}"
+    
+    # Fetch IP info
+    info=$(curl -s "https://ipinfo.io/$ip?token=$TOKEN")
+
+    # Print out the info
+    echo -e "\n" $BLUE"$info"$RESET $RED"($attempts attempts)"$RESET
+
+    # Didn't use pause() here in order to implement the ability to quit
+    echo -e $YELLOW
+    read -r -n1 -p $'\n> Press any key to continue (q to quit): ' key < /dev/tty
+    echo -e $RESET
+    clear
+
+    #------------V---V (took this from your hint in class)
+    if [[ "$key" =~ [qQ] ]]; then
+      break 
+      clear
+    fi
+
+    # Increment the IP counter
+    ((CURRENT_IP++))
+
+  done < <(
+    echo "$regs" | awk '{print $2, $1}'
+  )
+
+  clear
 
   return 0
 }
@@ -220,7 +280,6 @@ while [[ $finished -eq 0 ]]; do
       ;;
     2)
       print_info
-      pause
       ;;
     3)
       add_ips_to_ufw
