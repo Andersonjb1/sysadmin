@@ -251,8 +251,8 @@ function bracket_ips () {
 #show all firewall rules (run thru less)
 function show_firewall () {
   clear
-  ufwstatus
-}
+  echo "$ufwstatus" | less
+  }
 
 #if the firewall becomes too conjested,
 #reset it to allow only ssh, http, and 
