@@ -312,6 +312,9 @@ function show_firewall () {
       pause
       return 0
     fi
+
+    # refresh status each iteration
+    ufwstatus=$(ufw status numbered)
     echo "$ufwstatus" | less
     return 0
 }
@@ -368,7 +371,7 @@ function reset_firewall () {
 
 #add variables to store current state of UFW
 #and hold first three octets of each
-ufwstatus=$(ufw status)
+ufwstatus=$(ufw status numbered)
 currentIps=$()
   
 #count both total attempts and uniq IP addresses
