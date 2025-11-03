@@ -18,7 +18,13 @@
 #         - print_info()
 #           - Displays heading, IP address, detailed info, # of attempts,
 #               and allows the user to quit
-#
+#       - Updated for MS4 (2025-11-3)
+#           - add_ips_to_ufw()
+#             - Check UFW for IPs, Insert IP into UFW, Indicate success,
+#               Skip IP if present in CIDR, Indicate failure if IP already present
+#           - bracket_ips()
+#             - Convert IPs to CIDRs, Check UFW for IP (Delete if present),
+#               Check for CIDR (Skip if present), Insert CIDR into UFW (if not present)
 #
 ########################################################################
 
