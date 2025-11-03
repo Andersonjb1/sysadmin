@@ -129,22 +129,36 @@ function pause () {
 #that block isn't already in UFW and 
 #delete it, if so
 function delete_ip () {
-  clear
-  echo "Delete singleton IP from UFW"
-
   #find the UFW rule # associated with the IP
   #address
-  rule_no=$()
+  # expects IP as first argument
+  local ip="$1"
 
-  #if there is a rule associated with the provided
-  #IP address, delete it 
-  if [[ $rule_no ]]
-  then
-    
-    return 0   #return success
+  if [[ -z "$ip" ]]; then
+    echo -e $RED"No IP provided to delete_ip()"$RESET
+    return 1
   fi
 
-  return 1  #return fail
+  # refresh status
+  ufwstatus=$(ufw status)
+
+  # delete all matching singleton rules by number (re-evaluate numbers after each delete)
+  while true; do
+    rule_no=$(ufw status numbered | grep -F "$ip" | sed -n 's/^\[\s*\([0-9]\+\)\].*/\1/p' | head -n1)
+    [[ -z "$rule_no" ]] && break
+
+    if ufw --force delete "$rule_no" &> /dev/null; then
+      echo -e $GREEN"Deleted rule #$rule_no for $ip"$RESET
+    else
+      echo -e $RED"Failed to delete rule #$rule_no for $ip"$RESET
+      return 1
+    fi
+
+    # refresh ufwstatus after deletion
+    ufwstatus=$(ufw status)
+  done
+
+  return 0
 }
 
 #display the unique IP addresses on demand
@@ -333,22 +347,15 @@ function bracket_ips () {
     # if exact singleton IP present, delete it first so CIDR can be added
     if grep -qwF "$ip" <<< "$ufwstatus"; then
       echo -e $YELLOW"Found singleton IP $ip in UFW — deleting before adding $cidr"$RESET
-
-      # delete all matching singleton rules by number (re-evaluate numbers after each delete)
-      while true; do
-        rule_no=$(ufw status numbered | grep -F "$ip" | sed -n 's/^\[\s*\([0-9]\+\)\].*/\1/p' | head -n1)
-        [[ -z "$rule_no" ]] && break
-
-        if ufw --force delete "$rule_no" &> /dev/null; then
-          echo -e $GREEN"Deleted rule #$rule_no for $ip"$RESET
-        else
-          echo -e $RED"Failed to delete rule #$rule_no for $ip"$RESET
-          break
-        fi
-
-        # refresh ufwstatus after deletion
+      # delegate deletion to delete_ip() which will remove all singleton rules
+      if delete_ip "$ip"; then
+        # refresh status after successful deletion
         ufwstatus=$(ufw status)
-      done
+      else
+        echo -e $RED"Failed to remove singleton IP $ip — skipping CIDR add"$RESET
+        # skip this IP since we couldn't remove the singleton rule
+        continue
+      fi
     fi
 
     # re-check if CIDR got added by another iteration/process
