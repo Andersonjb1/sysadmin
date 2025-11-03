@@ -251,15 +251,60 @@ function bracket_ips () {
 #show all firewall rules (run thru less)
 function show_firewall () {
   clear
-  echo "$ufwstatus" | less
-  }
+
+    if [[ "$ufwstatus" == *"Status: inactive"* ]]; then
+      echo -e $YELLOW
+      echo "Firewall is not active..."
+      echo -e $RESET
+      pause
+      return 0
+    fi
+    echo "$ufwstatus" | less
+    return 0
+}
+
 
 #if the firewall becomes too conjested,
 #reset it to allow only ssh, http, and 
 #https. Then, current offenders can be added
 function reset_firewall () {
   clear
-  echo "Reset firewall"  
+
+  #########################################
+  # restores firewall to allow only ssh,
+  # http, and https through
+  #########################################
+
+  echo -e $RED
+  read -r -n1 -p $'\n> Are you sure you want to reset the firewall? (y/n): ' key < /dev/tty
+  echo -e $RESET
+
+  if [[ "$key" =~ [nN] ]]; then
+    echo -e $RED
+    echo "Returning to Main Menu..."
+    echo -e $RESET 
+
+    sleep 1.5
+    clear
+    return 0
+  fi
+
+  ufw --force disable &> /dev/null
+  ufw --force reset &> /dev/null
+
+  echo " ** UFW reset **" 
+
+  ufw allow ssh &> /dev/null
+  ufw allow http &> /dev/null
+  ufw allow https &> /dev/null
+
+  ufw --force enable &> /dev/null
+  echo " ** UFW enabled **" 
+
+
+  find /etc/ufw -name '*.rules.*' -delete &> /dev/null
+
+  pause
 
   return 0
 }
@@ -308,11 +353,11 @@ while [[ $finished -eq 0 ]]; do
       ;;
     5)
       show_firewall
-      pause
+      #pause
       ;;
     6)
       reset_firewall
-      pause
+      #pause
       ;;
     7)
       clear
