@@ -294,9 +294,6 @@ function add_ips_to_ufw () {
 #within a given range)
 function bracket_ips () {
   clear
-  echo "Modify IPs to CIDR (x.x.x.0/24)"
-  echo "Delete singleton IP from UFW if present"
-  echo "Insert CIDR to UFW if not present"
 
   # confirm action
   echo -e $YELLOW
