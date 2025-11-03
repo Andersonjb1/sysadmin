@@ -295,9 +295,84 @@ function add_ips_to_ufw () {
 function bracket_ips () {
   clear
   echo "Modify IPs to CIDR (x.x.x.0/24)"
-  echo "Delete IP from UFW"
-  echo "Insert CIDR to UFW"
+  echo "Delete singleton IP from UFW if present"
+  echo "Insert CIDR to UFW if not present"
 
+  # confirm action
+  echo -e $YELLOW
+  read -r -n1 -p $'\n> Convert offender IPs to /24 and add to UFW? (y/n): ' key < /dev/tty
+  echo -e $RESET
+  if [[ "$key" =~ [nN] ]]; then
+    echo "Aborting, returning to menu..."
+    sleep 1
+    clear
+    return 0
+  fi
+
+  # refresh ufw status
+  ufwstatus=$(ufw status)
+  if [[ "$ufwstatus" == *"Status: inactive"* ]]; then
+    echo -e $RED"UFW is inactive. Enable it before bracketing."$RESET
+    pause
+    return 1
+  fi
+
+  # iterate through offenders
+  while read -r ip attempts; do
+    # ignore empty lines
+    [[ -z "$ip" ]] && continue
+
+    cidr="${ip%.*}.0/24"
+
+    # refresh status each iteration
+    ufwstatus=$(ufw status)
+
+    # if CIDR already present, skip
+    if grep -qwF "$cidr" <<< "$ufwstatus"; then
+      echo -e $ORANGE"Skipping $ip — CIDR $cidr already present in UFW"$RESET
+      continue
+    fi
+
+    # if exact singleton IP present, delete it first so CIDR can be added
+    if grep -qwF "$ip" <<< "$ufwstatus"; then
+      echo -e $YELLOW"Found singleton IP $ip in UFW — deleting before adding $cidr"$RESET
+
+      # delete all matching singleton rules by number (re-evaluate numbers after each delete)
+      while true; do
+        rule_no=$(ufw status numbered | grep -F "$ip" | sed -n 's/^\[\s*\([0-9]\+\)\].*/\1/p' | head -n1)
+        [[ -z "$rule_no" ]] && break
+
+        if ufw --force delete "$rule_no" &> /dev/null; then
+          echo -e $GREEN"Deleted rule #$rule_no for $ip"$RESET
+        else
+          echo -e $RED"Failed to delete rule #$rule_no for $ip"$RESET
+          break
+        fi
+
+        # refresh ufwstatus after deletion
+        ufwstatus=$(ufw status)
+      done
+    fi
+
+    # re-check if CIDR got added by another iteration/process
+    ufwstatus=$(ufw status)
+    if grep -qwF "$cidr" <<< "$ufwstatus"; then
+      echo -e $ORANGE"After cleanup, CIDR $cidr already present — skipping $ip"$RESET
+      continue
+    fi
+
+    # insert CIDR as a deny rule at top
+    if ufw insert 1 deny from "$cidr" to any &> /dev/null; then
+      echo -e $GREEN"Added CIDR $cidr to UFW (covers $ip)."$RESET
+      # refresh ufwstatus so subsequent checks see the new rule
+      ufwstatus=$(ufw status)
+    else
+      echo -e $RED"Failed to add CIDR $cidr to UFW for $ip."$RESET
+    fi
+
+  done < <(echo "$regs" | awk '{print $2, $1}')
+
+  pause
   return 0
 }
 
@@ -312,6 +387,9 @@ function show_firewall () {
       pause
       return 0
     fi
+
+    # refresh status each iteration
+    ufwstatus=$(ufw status numbered)
     echo "$ufwstatus" | less
     return 0
 }
@@ -368,7 +446,7 @@ function reset_firewall () {
 
 #add variables to store current state of UFW
 #and hold first three octets of each
-ufwstatus=$(ufw status)
+ufwstatus=$(ufw status numbered)
 currentIps=$()
   
 #count both total attempts and uniq IP addresses
@@ -402,7 +480,7 @@ while [[ $finished -eq 0 ]]; do
       ;;
     4)
       bracket_ips
-      pause
+      #pause
       ;;
     5)
       show_firewall
