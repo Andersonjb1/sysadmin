@@ -215,6 +215,9 @@ function print_info () {
 
 #add the IPs to the firewall. if 'y', have to check
 #and make sure that the IP isn't already in the firewall
+#
+# - Check UFW for IPs, Insert IP into UFW, Indicate success,
+#   Skip IP if present in CIDR, Indicate failure if IP already present
 function add_ips_to_ufw () {
   clear
   echo "Add singleton IP addresses to UFW"
