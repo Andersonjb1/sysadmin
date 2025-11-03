@@ -25,6 +25,14 @@
 #           - bracket_ips()
 #             - Convert IPs to CIDRs, Check UFW for IP (Delete if present),
 #               Check for CIDR (Skip if present), Insert CIDR into UFW (if not present)
+#           - reset_firewall()
+#           - show_firewall()
+#
+#
+#
+#
+#
+#
 #
 ########################################################################
 
@@ -243,7 +251,7 @@ function bracket_ips () {
 #show all firewall rules (run thru less)
 function show_firewall () {
   clear
-  echo "List UFW rules"
+  ufwstatus
 }
 
 #if the firewall becomes too conjested,
@@ -262,7 +270,7 @@ function reset_firewall () {
 
 #add variables to store current state of UFW
 #and hold first three octets of each
-ufwstatus=$()
+ufwstatus=$(ufw status)
 currentIps=$()
   
 #count both total attempts and uniq IP addresses
