@@ -22,13 +22,12 @@
 #           - add_ips_to_ufw()
 #             - Check UFW for IPs, Insert IP into UFW, Indicate success,
 #               Skip IP if present in CIDR, Indicate failure if IP already present
-#           - bracket_ips()
-#             - Convert IPs to CIDRs, Check UFW for IP (Delete if present),
-#               Check for CIDR (Skip if present), Insert CIDR into UFW (if not present)
 #           - reset_firewall()
 #           - show_firewall()
-#
-#
+#       - MS5 - TODO
+#           - bracket_ips()
+#             - Convert IPs to CIDRs, Check UFW for IP (Delete if present),
+#               Check for CIDR (Skip if present), Insert CIDR into UFW (if not present)           
 #
 #
 #
@@ -164,7 +163,7 @@ function display_unique_ips () {
  
   echo -e $RED"Naughty IP addresses:"
   echo -e "====================================="$RESET
-  echo -e "$uniq_ips" 
+  echo -e "$uniq_ips"
   echo -e $RED"====================================="$RESET
   
   return 0
@@ -229,7 +228,61 @@ function print_info () {
 function add_ips_to_ufw () {
   clear
   echo "Add singleton IP addresses to UFW"
-  
+
+  # confirm action
+  echo -e $YELLOW
+  read -r -n1 -p $'\n> Add offender IPs to UFW? (y/n): ' key < /dev/tty
+  echo -e $RESET
+  if [[ "$key" =~ [nN] ]]; then
+    echo "Aborting, returning to menu..."
+    sleep 1
+    clear
+    return 0
+  fi
+
+  # refresh ufw status
+  ufwstatus=$(ufw status)
+
+  if [[ "$ufwstatus" == *"Status: inactive"* ]]; then
+    echo -e $RED"UFW is inactive. Enable it before adding rules."$RESET
+    pause
+    return 1
+  fi
+
+  # loop through ips
+  while read -r ip attempts; do
+    # ignore empty lines
+    [[ -z "$ip" ]] && continue
+
+    cidr="${ip%.*}.0/24"
+
+    # refresh status for each iteration to see newly added rules
+    ufwstatus=$(ufw status)
+
+    # if CIDR already present, skip adding ip
+    if grep -qwF "$cidr" <<< "$ufwstatus"; then
+      echo -e $ORANGE"Skipping $ip — covered by existing CIDR $cidr"$RESET
+      continue
+    fi
+
+    # if the exact IP is already present, indicate failure/skip
+    if grep -qwF "$ip" <<< "$ufwstatus"; then
+      echo -e $RED"IP $ip already present in UFW (skipping)."$RESET
+      continue
+    fi
+
+    # add deny rule for the single IP
+    if ufw insert 1 deny from "$ip" to any &> /dev/null; then
+      echo -e $GREEN"Added $ip to UFW successfully."$RESET
+      # update local ufwstatus so subsequent checks see the new rule
+      ufwstatus=$(ufw status)
+    else
+      echo -e $RED"Failed to add $ip to UFW."$RESET
+    fi
+
+  done < <(echo "$regs" | awk '{print $2, $1}')
+
+  pause
   return 0
 }
 
@@ -345,7 +398,7 @@ while [[ $finished -eq 0 ]]; do
       ;;
     3)
       add_ips_to_ufw
-      pause
+      #pause
       ;;
     4)
       bracket_ips
