@@ -143,7 +143,7 @@ function delete_ip() {
 
 	# delete all matching singleton rules by number (re-evaluate numbers after each delete)
 	while true; do
-		rule_no=$(ufw status numbered | grep -F "$ip" | sed -n 's/^\[\s*\([0-9]\+\)\].*/\1/p' | head -n1)
+		rule_no=$(ufw status numbered | grep -F "$ip" | sed -n 's/^\[\s*\([0-9]\+\)\].*/\1/p')
 		[[ -z "$rule_no" ]] && break
 
 		if ufw --force delete "$rule_no" &>/dev/null; then
@@ -483,7 +483,7 @@ while [[ $finished -eq 0 ]]; do
 		;;
 	5)
 		show_firewall
-		#pause
+		clear
 		;;
 	6)
 		reset_firewall
