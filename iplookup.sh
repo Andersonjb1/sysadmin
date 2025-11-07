@@ -1,9 +1,9 @@
 #!/bin/bash
 ########################################################################
-#	iplookup.sh
+# iplookup.sh
 #	  Author:	      Blaine Anderson
 #	  Date:		      2025-10-06
-# 	Last revised:	2025-10-29
+#	  Last revised:       2025-10-29
 #	  Description:
 #       - Updated to meet the requirements for MS1 (2025-10-18)
 #         - Error Checking
@@ -159,10 +159,10 @@ function display_unique_ips() {
         !(NR % 2) {color=c2}
         {printf "%s%s%s\n", color,"> " $2 " (" $1 " attempts)", reset}')
 
-	echo -e $RED"Naughty IP addresses:"
-	echo -e "====================================="$RESET
+	echo -e "$RED""Naughty IP addresses:"
+	echo -e "=====================================""$RESET"
 	echo -e "$uniq_ips"
-	echo -e $RED"====================================="$RESET
+	echo -e "$RED""=====================================""$RESET"
 
 	return 0
 }
@@ -195,7 +195,7 @@ function print_info() {
 
 		# Didn't use pause() here in order to implement the ability to quit
 		echo -e $YELLOW
-		read -r -n1 -p $'\n> Press any key to continue (q to quit): ' key </dev/tty
+		read -r -n1 -p $'\n> Press any key to continue (q to quit): ' key </des/tty
 		echo -e $RESET
 		clear
 
