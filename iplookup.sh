@@ -197,6 +197,7 @@ function print_info() {
 		echo -e "$YELLOW"
 		read -r -p $'\n> Press any key to continue (q to quit): ' key </des/tty
 		echo -e "$RESET"
+		pause
 		clear
 
 		#------------V---V (took this from your hint in class)
