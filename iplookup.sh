@@ -195,9 +195,8 @@ function print_info() {
 
 		# Didn't use pause() here in order to implement the ability to quit
 		echo -e "$YELLOW"
-		read -r -p $'\n> Press any key to continue (q to quit): ' key </des/tty
+		read -r -p $'\n> Press any key to continue (q to quit): ' key </dev/tty
 		echo -e "$RESET"
-		pause
 		clear
 
 		#------------V---V (took this from your hint in class)
