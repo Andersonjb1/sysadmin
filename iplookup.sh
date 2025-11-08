@@ -50,13 +50,13 @@ ORANGE="\033[38;5;216m"
 ############### ERROR CHECKING ######################
 #have to sudo to access log files
 if [[ $EUID -ne 0 ]]; then
-	echo -e $RED"You are using a non-privileged account!"$RESET >&2
+	echo -e "$RED""You are using a non-privileged account!""$RESET" >&2
 	exit 1
 fi
 
 #check for proper usage (require exactly one argument)
 if [[ $# -ne 1 ]]; then
-	echo -e $RED"Proper usage: sudo ./iplookup.sh [path-to-file]"$RESET >&2
+	echo -e "$RED""Proper usage: sudo ./iplookup.sh [path-to-file]""$RESET" >&2
 	exit 2
 fi
 
@@ -64,7 +64,7 @@ fi
 INPUT_FILE="$1"
 
 if [[ ! -e "$INPUT_FILE" ]]; then
-	echo -e $RED"Input file '$INPUT_FILE' does not exist."$RESET >&2
+	echo -e "$RED""Input file '$INPUT_FILE' does not exist.""$RESET" >&2
 	exit 3
 fi
 
@@ -89,7 +89,7 @@ regs=$(grep -oP "rhost=\K$IP" "$INPUT_FILE" | sort -g | uniq -c | awk '$1 >= 100
 i=$(echo "$regs" | awk '{sum += $1} END {print sum+0}') #counter for attempts
 uniqIps=$(echo "$regs" | sort -u | wc -l)               #counter for unique IP addresses
 
-echo -e $LTPURP"\n\nThere were "$i" attempts\nFrom "$uniqIps" unique IP addresses"$RESET
+echo -e "$LTPURP""\n\nThere were $i attempts\nFrom $uniqIps unique IP addresses""$RESET"
 
 sleep 1s
 echo
@@ -97,10 +97,10 @@ echo
 ############  FUNCTIONS  ############
 #display menu
 function show_menu() {
-	echo -e $CYAN"============================================"
+	echo -e "$CYAN""============================================"
 	echo -e "=================== Menu ==================="
 	echo -e "============================================"
-	echo -e $RESET" ┌────────────────────────────────────────┐"
+	echo -e "$RESET"" ┌────────────────────────────────────────┐"
 	echo -e " │${YELLOW}  1.${RESET} Get unique IP addresses            │"
 	echo -e " │${YELLOW}  2.${RESET} Show detailed information          │"
 	echo -e " │${YELLOW}  3.${RESET} Add new offenders to UFW           │"
@@ -109,16 +109,16 @@ function show_menu() {
 	echo -e " │${YELLOW}  6.${RESET} Reset the firewall                 │"
 	echo -e " │${YELLOW}  7.${RESET} Quit                               │"
 	echo -e " └────────────────────────────────────────┘"
-	echo -e $CYAN"============================================"
-	echo -e $RESET
+	echo -e "$CYAN""============================================"
+	echo -e "$RESET"
 	return 0
 }
 
 #pause output
 function pause() {
-	echo -e $RED"\n...Press Enter to continue..."
+	echo -e "$RED""\n...Press Enter to continue..."
 	read -r -n1 </dev/tty
-	echo -e $RESET
+	echo -e "$RESET"
 	clear
 	return 0
 }
@@ -183,7 +183,7 @@ function print_info() {
 	while read -r ip attempts; do
 
 		# Display counter
-		echo -e $PURPLE"[$CURRENT_IP | $TOTAL_IPS]"$RESET
+		echo -e "$PURPLE""[$CURRENT_IP | $TOTAL_IPS]""$RESET"
 
 		echo -e "${RED}IP Information for $ip${RESET}"
 
@@ -191,12 +191,12 @@ function print_info() {
 		info=$(curl -s "https://ipinfo.io/$ip?token=$TOKEN")
 
 		# Print out the info
-		echo -e "\n" $BLUE"$info"$RESET $RED"($attempts attempts)"$RESET
+		echo -e "\n" "$BLUE""$info""$RESET" "$RED""($attempts attempts)""$RESET"
 
 		# Didn't use pause() here in order to implement the ability to quit
-		echo -e $YELLOW
+		echo -e "$YELLOW"
 		read -r -n1 -p $'\n> Press any key to continue (q to quit): ' key </des/tty
-		echo -e $RESET
+		echo -e "$RESET"
 		clear
 
 		#------------V---V (took this from your hint in class)
@@ -227,9 +227,9 @@ function add_ips_to_ufw() {
 	echo "Add singleton IP addresses to UFW"
 
 	# confirm action
-	echo -e $YELLOW
+	echo -e "$YELLOW"
 	read -r -n1 -p $'\n> Add offender IPs to UFW? (y/n): ' key </dev/tty
-	echo -e $RESET
+	echo -e "$RESET"
 	if [[ "$key" =~ [nN] ]]; then
 		echo "Aborting, returning to menu..."
 		sleep 1
@@ -241,7 +241,7 @@ function add_ips_to_ufw() {
 	ufwstatus=$(ufw status)
 
 	if [[ "$ufwstatus" == *"Status: inactive"* ]]; then
-		echo -e $RED"UFW is inactive. Enable it before adding rules."$RESET
+		echo -e "$RED""UFW is inactive. Enable it before adding rules.""$RESET"
 		pause
 		return 1
 	fi
@@ -258,23 +258,23 @@ function add_ips_to_ufw() {
 
 		# if CIDR already present, skip adding ip
 		if grep -qwF "$cidr" <<<"$ufwstatus"; then
-			echo -e $ORANGE"Skipping $ip — covered by existing CIDR $cidr"$RESET
+			echo -e "$ORANGE""Skipping $ip — covered by existing CIDR $cidr""$RESET"
 			continue
 		fi
 
 		# if the exact IP is already present, indicate failure/skip
 		if grep -qwF "$ip" <<<"$ufwstatus"; then
-			echo -e $RED"IP $ip already present in UFW (skipping)."$RESET
+			echo -e "$RED""IP $ip already present in UFW (skipping).""$RESET"
 			continue
 		fi
 
 		# add deny rule for the single IP
 		if ufw insert 1 deny from "$ip" to any &>/dev/null; then
-			echo -e $GREEN"Added $ip to UFW successfully."$RESET
+			echo -e "$GREEN""Added $ip to UFW successfully.""$RESET"
 			# update local ufwstatus so subsequent checks see the new rule
 			ufwstatus=$(ufw status)
 		else
-			echo -e $RED"Failed to add $ip to UFW."$RESET
+			echo -e "$RED""Failed to add $ip to UFW.""$RESET"
 		fi
 
 	done < <(echo "$regs" | awk '{print $2, $1}')
@@ -303,9 +303,9 @@ function show_firewall() {
 	clear
 
 	if [[ "$ufwstatus" == *"Status: inactive"* ]]; then
-		echo -e $YELLOW
+		echo -e "$YELLOW"
 		echo "Firewall is not active..."
-		echo -e $RESET
+		echo -e "$RESET"
 		pause
 		return 0
 	fi
@@ -328,14 +328,14 @@ function reset_firewall() {
 	# Source: resetufw.sh
 	#########################################
 
-	echo -e $RED
+	echo -e "$RED"
 	read -r -n1 -p $'\n> Are you sure you want to reset the firewall? (y/n): ' key </dev/tty
-	echo -e $RESET
+	echo -e "$RESET"
 
 	if [[ "$key" =~ [nN] ]]; then
-		echo -e $RED
+		echo -e "$RED"
 		echo "Returning to Main Menu..."
-		echo -e $RESET
+		echo -e "$RESET"
 
 		sleep 1.5
 		clear
@@ -368,13 +368,13 @@ function reset_firewall() {
 #add variables to store current state of UFW
 #and hold first three octets of each
 ufwstatus=$(ufw status numbered)
-currentIps=$()
+#currentIps=$()
 
 #count both total attempts and uniq IP addresses
-while read num ip; do
+while read -r num ip; do
 	((i += num))
 	((uniqIps++))
-done <<<$regs
+done <<<"$regs"
 
 #display totals
 # Display count totals
@@ -383,9 +383,9 @@ pause
 # main loop
 while [[ $finished -eq 0 ]]; do
 	show_menu
-	echo -e $CYAN"Choose an option [1-7]: "
-	read -n1 choice
-	echo -e $RESET
+	echo -e "$CYAN""Choose an option [1-7]: "
+	read -n1 -r choice
+	echo -e "$RESET"
 	case "$choice" in
 	1)
 		display_unique_ips
@@ -412,12 +412,12 @@ while [[ $finished -eq 0 ]]; do
 		;;
 	7)
 		clear
-		echo -e $GREEN"Exiting..."$RESET
+		echo -e "$GREEN""Exiting...""$RESET"
 		finished=1
 		;;
 	*)
 		clear
-		echo -e $RED"Invalid selection. Please choose 1-7."$RESET
+		echo -e "$RED""Invalid selection. Please choose 1-7.""$RESET"
 		;;
 	esac
 done
