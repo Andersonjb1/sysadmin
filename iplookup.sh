@@ -194,7 +194,7 @@ function print_info() {
 		echo -e "\n" "$BLUE""$info""$RESET" "$RED""($attempts attempts)""$RESET"
 
 		# Didn't use pause() here in order to implement the ability to quit
-		echo -e "$YELLOW"'\n> Press any key to continue (q to quit): '
+		echo -e $YELLOW'\n> Press any key to continue (q to quit): '
 		read -rp -n1 key </des/tty
 		echo -e "$RESET"
 		clear
