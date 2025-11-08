@@ -195,9 +195,9 @@ function print_info() {
 
 		# Didn't use pause() here in order to implement the ability to quit
 		echo -e "$YELLOW"'\n> Press any key to continue (q to quit): '
-		read -r -n1 key </des/tty
+		read -rp -n1 key </des/tty
 		echo -e "$RESET"
-		#clear
+		clear
 
 		#------------V---V (took this from your hint in class)
 		if [[ "$key" =~ [qQ] ]]; then
